@@ -2,6 +2,7 @@ import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Lambda
 import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
 
 """ 2 Training Data Preparation 
 Code for processing data samples can get messy and hard to maintain. Normally we separate our data preparation code 
@@ -24,7 +25,7 @@ and benchmark your model. You can find them here:
 
 """
 
-""" 2.1 Load Fashion-MNIST
+""" 2.1 Load Fashion-MNIST 
 Here is an example of how to load the Fashion-MNIST dataset from TorchVision. Fashion-MNIST is a dataset of Zalando’s 
 article images consisting of of 60,000 training examples and 10,000 test examples. Each example comprises a 
 28×28 grayscale image and an associated label from one of 10 classes.
@@ -33,10 +34,11 @@ We load the FashionMNIST Dataset with this method
 """
 
 
-def load_data():
+def download_data():
+    data_path = "/tmp/pytorch/data"
     training_data = datasets.FashionMNIST(
         # root is the path where the data is stored
-        root="data",
+        root=data_path,
         # train specifies training or test dataset,
         train=True,
         # download=True downloads the data from the Internet if it's not available at root.
@@ -46,7 +48,7 @@ def load_data():
     )
 
     test_data = datasets.FashionMNIST(
-        root="data",
+        root=data_path,
         train=False,
         download=True,
         transform=ToTensor()
@@ -87,10 +89,56 @@ def show_image(data):
     plt.show()
 
 
+""" 2.2 Preparing data for training with torch.utils.data.Dataset
+Check the custom Dataset in source/CustomDataset
+"""
+
+""" 2.3 Preparing your data for training with torch.utils.data.DataLoaders
+The Dataset retrieves our dataset's features and labels one sample at a time. While training a model, we typically 
+want to pass samples in "mini batches", reshuffle the data at every epoch to reduce model over-fitting, and use 
+Python's multiprocessing to speed up data retrieval.
+
+DataLoader is an iterable that abstracts this complexity for us in an easy API.
+
+"""
+
+
+def prepare_data_with_dataloader(data, batch_size: int, shuffle: bool):
+    return DataLoader(data, batch_size=batch_size, shuffle=shuffle)
+
+
+def iterate_data_in_dataloader(data_in_dataloader):
+    # With the prepare_data_with_dataloader method, we have loaded that dataset into the Dataloader and can iterate
+    # through the dataset as needed. Each iteration of the dataloader returns a batch of train_features and train_labels
+    #
+    # (containing batch_size=64 features and labels respectively).
+    # Because we specified shuffle=True, after we iterate over all batches the data is shuffled
+    # Display image and label.
+    train_features, train_labels = next(iter(data_in_dataloader))
+    # Note the shape of feature is four dimensions [64, 1, 28, 28]
+    print(f"Feature batch shape: {train_features.size()}")
+    print(f"Labels batch shape: {train_labels.size()}")
+    img = train_features[0].squeeze()
+    label = train_labels[0]
+    plt.imshow(img, cmap="gray")
+    plt.show()
+    print(f"Label: {label}")
+
+
 def main():
     # Step 1: Prepare data
-    training_data, test_data = load_data()
-    show_image(training_data)
+    # download data
+    training_data, test_data = download_data()
+
+    # view the data
+    # show_image(training_data)
+
+    # prepare data in patch via dataloader
+    train_dataloader = prepare_data_with_dataloader(training_data, 64, True)
+    test_dataloader = prepare_data_with_dataloader(test_data, 64, True)
+
+    # iterate and show data in data loader
+    iterate_data_in_dataloader(train_dataloader)
 
 
 if __name__ == "__main__":
