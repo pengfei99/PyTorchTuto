@@ -49,9 +49,10 @@ def preprocess(raw_reviews, sentiments=None):
     TOKENIZER = CamembertTokenizer.from_pretrained(
         'camembert-base',
         do_lower_case=True)
+    # encode the reviews
     encoded_batch = TOKENIZER.batch_encode_plus(raw_reviews,
                                                 add_special_tokens=False,
-                                                pad_to_max_length=True,
+                                                padding=True,
                                                 return_attention_mask=True,
                                                 return_tensors='pt')
     if sentiments:
@@ -94,6 +95,14 @@ def main():
     test_file_path = "/home/pliu/data_set/nlp/allo_cine/test.csv"
     val_file_path = "/home/pliu/data_set/nlp/allo_cine/val.csv"
     train, test, val = load_data(train_file_path, test_file_path, val_file_path)
+
+    # encode train data
+    # get review column and convert it to list
+    train_feature = train['review'].values.tolist()
+    train_label = train["popularity"].values.tolist()
+    input_ids, attention_mask, encoded_train_label = preprocess(train_feature, train_label)
+
+    print(encoded_train_label)
 
 
 if __name__ == "__main__":
